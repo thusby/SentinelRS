@@ -16,7 +16,7 @@ SentinelRS lives in your macOS menu bar and actively monitors your system's memo
 
 Here's a glimpse of SentinelRS in action, showing the menu bar icon and the dropdown menu with top memory consumers:
 
-![SentinelRS Menu Bar UI](https://github.com/thusby/SentinelRS/assets/2627443/f789e900-50d8-4f51-b841-396a12b67f13)
+![SentinelRS Menu Bar UI](/images/sentinelrs_menu_bar.png)
 
 ## Installation
 
