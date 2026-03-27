@@ -1,26 +1,33 @@
 mod memory;
 mod process;
 
-use std::collections::{VecDeque, HashMap};
+use std::collections::{HashMap, VecDeque};
 use std::process::Command;
 use std::thread;
 use std::time::Duration;
 
 use mac_notification_sys::Notification;
-use muda::{Menu, MenuItem, Submenu, PredefinedMenuItem, MenuEvent, MenuId};
-use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy};
-use tao::event::Event;
-use tray_icon::{TrayIconBuilder, Icon};
+use muda::{Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu};
 use sysinfo::Pid;
+use tao::event::Event;
+use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy};
+use tray_icon::{Icon, TrayIconBuilder};
 
 use crate::memory::get_memory_level;
 use crate::process::ProcessManager;
 
 #[derive(Debug)]
 enum UserEvent {
-    UpdateStatus { level: u32, trend: String },
+    UpdateStatus {
+        level: u32,
+        trend: String,
+    },
     UpdateTopConsumers(Vec<(Pid, String, u64)>),
-    PanicTriggered { pid: Pid, name: String, memory_mb: u64 },
+    PanicTriggered {
+        pid: Pid,
+        name: String,
+        memory_mb: u64,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -66,7 +73,7 @@ fn main() {
     thread::spawn(move || watchdog_thread(proxy_clone));
 
     let menu_channel = MenuEvent::receiver();
-    let mut pm = ProcessManager::new();
+    let pm = ProcessManager::new();
     let mut menu_actions: HashMap<MenuId, MenuAction> = HashMap::new();
     let mut current_submenus: Vec<Submenu> = Vec::new();
 
@@ -174,12 +181,21 @@ fn watchdog_thread(proxy: EventLoopProxy<UserEvent>) {
         let trend = if history.len() >= 3 {
             let old = *history.front().unwrap();
             let new = *history.back().unwrap();
-            if new > old + 3 { "↗" }
-            else if new < old - 3 { "↘" }
-            else { "→" }
-        } else { "→" };
+            if new > old + 3 {
+                "↗"
+            } else if new < old - 3 {
+                "↘"
+            } else {
+                "→"
+            }
+        } else {
+            "→"
+        };
 
-        let _ = proxy.send_event(UserEvent::UpdateStatus { level, trend: trend.to_string() });
+        let _ = proxy.send_event(UserEvent::UpdateStatus {
+            level,
+            trend: trend.to_string(),
+        });
 
         pm.refresh();
         let top = pm.get_top_consumers(5);

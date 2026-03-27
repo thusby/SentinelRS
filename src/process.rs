@@ -1,5 +1,5 @@
 use std::collections::HashSet;
-use sysinfo::{Pid, Process, ProcessStatus, Signal, System};
+use sysinfo::{Pid, Process, ProcessStatus, ProcessesToUpdate, Signal, System};
 
 pub struct ProcessManager {
     system: System,
@@ -32,8 +32,8 @@ impl ProcessManager {
     }
 
     pub fn refresh(&mut self) {
-        // Vi oppdaterer kun det vi trenger for å spare ressurser
-        self.system.refresh_processes();
+        // Oppdaterer alle prosesser og fjerner de som er avsluttet
+        self.system.refresh_processes(ProcessesToUpdate::All, true);
         self.system.refresh_memory();
     }
 
