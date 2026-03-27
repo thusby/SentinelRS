@@ -7,20 +7,30 @@ on:
 jobs:
   release:
     runs-on: macos-latest
+    permissions:
+      contents: write # EKSTREMT VIKTIG: Gir botten lov til å lage releases
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+
       - name: Build Release
         run: cargo build --release
+
       - name: Package
         run: |
-          mkdir -p release
-          cp target/release/sentinel-rs release/
-          zip -r sentinel-rs-macos.zip release/
-      - name: Upload Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: sentinel-rs-macos.zip
+          mkdir -p dist
+          # Finn binærfilen uavhengig av store/små bokstaver
+          find target/release -maxdepth 1 -type f -not -name "*.d" -exec cp {} dist/ \;
+          cd dist && zip -r ../sentinel-rs-macos.zip .
+
+      - name: Create Release and Upload Asset
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" \
+            --title "Release $TAG" \
+            --generate-notes \
+            sentinel-rs-macos.zip
