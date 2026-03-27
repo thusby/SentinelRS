@@ -101,7 +101,7 @@ fn main() {
     let menu_channel = MenuEvent::receiver();
     let pm = ProcessManager::new(); // ProcessManager for handling manual menu actions
     let mut menu_actions: HashMap<MenuId, MenuAction> = HashMap::new();
-    let mut current_submenus: Vec<Submenu> = Vec::new(); // To manage dynamic submenus for processes
+    let mut current_dynamic_menu_items: Vec<MenuItem> = Vec::new(); // To manage dynamic menu items for processes
 
     event_loop.run(move |event, _, control_flow| {
         *control_flow = ControlFlow::Wait; // Keep the application running and waiting for events
@@ -111,7 +111,8 @@ fn main() {
             if menu_event.id == quit_item.id() {
                 *control_flow = ControlFlow::Exit; // Exit the application
             } else if menu_event.id == about_item.id() {
-                // Display an "About" dialog using osascript
+                // Display an "About" dialog using osascript.
+                // Quotes and newlines must be correctly escaped for the AppleScript string.
                 Command::new("osascript")
                     .arg("-e")
                     .arg("display dialog \"SentinelRS is a proactive macOS memory guardian.\\n\\n• Green (<80% load): Normal\\n• Yellow (80-90% load): Warning\\n• Red (>90% load): Critical (Auto-Freezes heaviest process to prevent kernel panic)\\n\\nTrend arrows (↗↘→) show load changes over 5 mins.\" with title \"About SentinelRS\" buttons {\"OK\"} default button \"OK\"")
@@ -162,25 +163,29 @@ fn main() {
                 info_item.set_text(format!("Memory Load: {}% ({}% Free)", used, level));
             }
             Event::UserEvent(UserEvent::UpdateTopConsumers(consumers)) => {
-                // Clear existing dynamic process submenus
-                for sub in &current_submenus {
-                    let _ = kill_submenu.remove(sub);
+                // Clear existing dynamic menu items.
+                // This iterates over the stored MenuIds and removes them from the submenu.
+                for item in &current_dynamic_menu_items {
+                    let _ = kill_submenu.remove(item);
                 }
-                current_submenus.clear();
+                current_dynamic_menu_items.clear();
                 menu_actions.clear();
 
-                // Add new dynamic submenus for top memory consumers
+                // Add new dynamic menu items for top memory consumers in a flatter structure.
                 for (pid, name, mem) in consumers {
                     let mb = mem / 1048576; // Convert bytes to megabytes
-                    let process_menu = Submenu::new(format!("{} ({} MB)", name, mb), true);
-                    let _ = kill_submenu.append(&process_menu);
-                    current_submenus.push(process_menu.clone());
 
-                    let freeze_item = MenuItem::new("Freeze (SIGSTOP)", true, None);
-                    let kill_item = MenuItem::new("Force Quit (SIGKILL)", true, None);
+                    // Create "Freeze" menu item directly under kill_submenu
+                    let freeze_text = format!("Freeze: {} ({} MB)", name, mb);
+                    let freeze_item = MenuItem::new(freeze_text, true, None);
+                    let _ = kill_submenu.append(&freeze_item);
+                    current_dynamic_menu_items.push(freeze_item.clone()); // Store the item itself
 
-                    let _ = process_menu.append(&freeze_item);
-                    let _ = process_menu.append(&kill_item);
+                    // Create "Kill" menu item directly under kill_submenu
+                    let kill_text = format!("Kill: {} ({} MB)", name, mb);
+                    let kill_item = MenuItem::new(kill_text, true, None);
+                    let _ = kill_submenu.append(&kill_item);
+                    current_dynamic_menu_items.push(kill_item.clone()); // Store the item itself
 
                     // Store menu item IDs to map back to process actions
                     menu_actions.insert(freeze_item.id().clone(), MenuAction::Freeze(pid, name.clone()));
@@ -191,7 +196,7 @@ fn main() {
                 // Send a notification when the Panic Protocol activates
                 let _ = Notification::new()
                     .title("Memory Critical!")
-                    .message(&format!("Auto-Frozen {} (PID {}) using {} MB", name, pid, memory_mb))
+                    .message(&format!("Auto-Frozen {} (PID {}) using {} MB", name, pid, memory_mb)) // Added space before MB
                     .sound("Basso") // Distinct sound for critical alerts
                     .send();
             }
