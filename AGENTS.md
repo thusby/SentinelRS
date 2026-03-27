@@ -24,6 +24,3 @@ The application is strictly split into two threads:
 - `src/process.rs`: `ProcessManager` struct caching the `sysinfo::System` instance. Handles whitelisting, sorting top memory hogs, and signal dispatching.
 - `build_app.sh`: Bash script to run `cargo build --release` and package the resulting binary into a valid `.app` bundle with an `Info.plist` (specifically injecting `LSUIElement=true` so the app doesn't show in the Dock).
 
-### Future Improvements
-- Implement global hotkey (e.g., `Cmd+Shift+Escape`) via `tao` to immediately trigger a freeze of the top app.
-- Provide a `config.toml` file to allow users to customize their own whitelist without recompiling.

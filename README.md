@@ -12,6 +12,12 @@ SentinelRS lives in your macOS menu bar and actively monitors your system's memo
 - **Real-time Trend Tracking**: Analyzes memory pressure over a sliding window and displays a trend arrow (↗↘→) directly in your menu bar so you can spot leaks early.
 - **One-Click Process Management**: The menu dynamically lists the top memory consumers, allowing you to manually Freeze (`SIGSTOP`) or Force Quit (`SIGKILL`) them with a single click.
 
+## Screenshots
+
+Here's a glimpse of SentinelRS in action, showing the menu bar icon and the dropdown menu with top memory consumers:
+
+![SentinelRS Menu Bar UI](https://github.com/thusby/SentinelRS/assets/2627443/f789e900-50d8-4f51-b841-396a12b67f13)
+
 ## Installation
 
 ### Option 1: Download Ready-to-Use (Recommended)
