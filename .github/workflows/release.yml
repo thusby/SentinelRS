@@ -19,13 +19,13 @@ jobs:
 
       - name: Build Binary
         run: cargo build --release
-
       - name: Create App Bundle
-        run: |
-          chmod +x build_app.sh
-          ./build_app.sh
-          # Vi lager en zip av selve .app-mappen for distribusjon
-          zip -r SentinelRS-macOS.zip SentinelRS.app
+              run: |
+                chmod +x build_app.sh
+                ./build_app.sh
+                # Vi må gå dit scriptet la appen for å pakke den riktig
+                cd target/release
+                zip -r ../../SentinelRS-macOS.zip SentinelRS.app
 
       - name: Create Release and Upload Asset
         env:
