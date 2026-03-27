@@ -1,0 +1,13 @@
+[package]
+name = "sentinel-rs"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+crossbeam-channel = "0.5.15"
+libc = "0.2.183"
+mac-notification-sys = "0.6.12"
+muda = "0.17.1"
+sysinfo = "0.38.4"
+tao = "0.35.0"
+tray-icon = "0.21.3"
