@@ -7,7 +7,7 @@ SentinelRS lives in your macOS menu bar and actively monitors your system's memo
 ## Features
 
 - **Blazing Fast**: Written in pure Rust. Uses direct `libc` bindings for `kern.memorystatus_level`, completely avoiding the overhead of spawning shell processes like `ps` or `awk`.
-- **Proactive Panic Protocol**: When the memory free percentage drops below 10% (Critical), SentinelRS instantly identifies the heaviest non-system process and sends a `SIGSTOP` to freeze it in its tracks, giving macOS room to breathe.
+- **Proactive Panic Protocol**: When the memory load exceeds 90% (Critical), SentinelRS instantly identifies the heaviest non-system process and sends a `SIGSTOP` to freeze it in its tracks, giving macOS room to breathe.
 - **Native Menu UI**: Built with `tao` and `muda` for a lightweight, native macOS tray icon and dropdown menu. No Electron, no web views.
 - **Real-time Trend Tracking**: Analyzes memory pressure over a sliding 5-minute window and displays a trend arrow (↗↘→) directly in your menu bar so you can spot leaks early.
 - **One-Click Process Management**: The menu dynamically lists the top memory consumers, allowing you to manually Freeze (`SIGSTOP`) or Force Quit (`SIGKILL`) them with a single click.
@@ -15,9 +15,9 @@ SentinelRS lives in your macOS menu bar and actively monitors your system's memo
 ## How It Works
 
 SentinelRS uses an adaptive background watchdog thread:
-* **Normal State (Green 🟢 >20%)**: Checks memory pressure every 2 seconds.
-* **Warning State (Yellow 🟡 10-20%)**: Increases polling rate to every 500ms to monitor volatile situations closely.
-* **Critical State (Red 🔴 <10%)**: Triggers the Panic Protocol. Sends a critical macOS notification, finds the heaviest app (excluding whitelisted system tasks), and suspends it immediately.
+* **Normal State (Green 🟢 <80% load)**: Checks memory pressure every 2 seconds.
+* **Warning State (Yellow 🟡 80-90% load)**: Increases polling rate to every 500ms to monitor volatile situations closely.
+* **Critical State (Red 🔴 >90% load)**: Triggers the Panic Protocol. Sends a critical macOS notification, finds the heaviest app (excluding whitelisted system tasks), and suspends it immediately.
 
 ## Installation
 

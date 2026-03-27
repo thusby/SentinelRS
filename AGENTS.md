@@ -16,7 +16,7 @@ SentinelRS is a native macOS application written in Rust (Edition 2021). It repl
 ### Concurrency Model
 The application is strictly split into two threads:
 1. **Main Thread (UI/Event Loop)**: Handled by `tao`. Receives events via a proxy and updates the `tray-icon` title or the `muda` submenus. Executes manual kill/freeze actions.
-2. **Watchdog Thread**: Runs an infinite loop independent of UI blocking. Samples memory pressure. If pressure drops below 20%, it ramps up polling to 500ms and extracts top processes via `ProcessManager`. If pressure drops below 10%, it autonomously triggers the `Panic Protocol` and sends an event back to the UI.
+2. **Watchdog Thread**: Runs an infinite loop independent of UI blocking. Samples memory pressure. If load exceeds 80% (i.e. free drops below 20%), it ramps up polling to 500ms and extracts top processes via `ProcessManager`. If load exceeds 90%, it autonomously triggers the `Panic Protocol` and sends an event back to the UI.
 
 ### Project Structure
 - `src/main.rs`: Entry point, event loop, tray icon setup, and the watchdog thread.
