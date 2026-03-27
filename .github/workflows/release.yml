@@ -20,7 +20,7 @@ jobs:
       - name: Build Binary
         run: cargo build --release
       - name: Create App Bundle
-              run: |
+              run:
                 chmod +x build_app.sh
                 ./build_app.sh
                 # Vi må gå dit scriptet la appen for å pakke den riktig
