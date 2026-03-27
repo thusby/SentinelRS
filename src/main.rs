@@ -79,7 +79,7 @@ fn main() {
             } else if menu_event.id == about_item.id() {
                 Command::new("osascript")
                     .arg("-e")
-                    .arg("display dialog \"SentinelRS is a proactive macOS memory guardian.\\n\\n• Green (>20% free): Normal\\n• Yellow (10-20% free): Warning\\n• Red (<10% free): Critical (Auto-Freezes heaviest process to prevent kernel panic)\\n\\nTrend arrows (↗↘→) show pressure changes over 5 mins.\" with title \"About SentinelRS\" buttons {\"OK\"} default button \"OK\"")
+                    .arg("display dialog \"SentinelRS is a proactive macOS memory guardian.\\n\\n• Green (<80% load): Normal\\n• Yellow (80-90% load): Warning\\n• Red (>90% load): Critical (Auto-Freezes heaviest process to prevent kernel panic)\\n\\nTrend arrows (↗↘→) show load changes over 5 mins.\" with title \"About SentinelRS\" buttons {\"OK\"} default button \"OK\"")
                     .spawn()
                     .ok();
             } else if menu_event.id == emergency_purge.id() {
@@ -118,8 +118,9 @@ fn main() {
                 } else {
                     "🟢"
                 };
-                tray_icon.set_title(Some(format!("{} MEM: {}% {}", color, level, trend)));
-                info_item.set_text(format!("Pressure: {}%", level));
+                let used = 100_u32.saturating_sub(level);
+                tray_icon.set_title(Some(format!("{} MEM: {}% {}", color, used, trend)));
+                info_item.set_text(format!("Memory Load: {}% ({}% Free)", used, level));
             }
             Event::UserEvent(UserEvent::UpdateTopConsumers(consumers)) => {
                 // Clear existing items by removing stored submenus
@@ -163,8 +164,9 @@ fn watchdog_thread(proxy: EventLoopProxy<UserEvent>) {
 
     loop {
         let level = get_memory_level().unwrap_or(100);
+        let used = 100_u32.saturating_sub(level);
 
-        history.push_back(level);
+        history.push_back(used);
         if history.len() > 20 {
             history.pop_front();
         }
