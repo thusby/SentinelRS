@@ -114,7 +114,7 @@ fn main() {
                 // Display an "About" dialog using osascript
                 Command::new("osascript")
                     .arg("-e")
-                    .arg("display dialog \\\"SentinelRS is a proactive macOS memory guardian.\\\\n\\\\n• Green (<80% load): Normal\\\\n• Yellow (80-90% load): Warning\\\\n• Red (>90% load): Critical (Auto-Freezes heaviest process to prevent kernel panic)\\\\n\\\\nTrend arrows (↗↘→) show load changes over 5 mins.\\\" with title \\\"About SentinelRS\\\" buttons {\\\"OK\\\"} default button \\\"OK\\\"")
+                    .arg("display dialog \"SentinelRS is a proactive macOS memory guardian.\\n\\n• Green (<80% load): Normal\\n• Yellow (80-90% load): Warning\\n• Red (>90% load): Critical (Auto-Freezes heaviest process to prevent kernel panic)\\n\\nTrend arrows (↗↘→) show load changes over 5 mins.\" with title \"About SentinelRS\" buttons {\"OK\"} default button \"OK\"")
                     .spawn()
                     .ok();
             } else if menu_event.id == emergency_purge.id() {
