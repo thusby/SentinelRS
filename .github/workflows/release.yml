@@ -8,22 +8,24 @@ jobs:
   release:
     runs-on: macos-latest
     permissions:
-      contents: write # EKSTREMT VIKTIG: Gir botten lov til å lage releases
+      contents: write
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
       - uses: actions/checkout@v4
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Release
+      - name: Build Binary
         run: cargo build --release
 
-      - name: Package
+      - name: Create App Bundle
         run: |
-          mkdir -p dist
-          # Finn binærfilen uavhengig av store/små bokstaver
-          find target/release -maxdepth 1 -type f -not -name "*.d" -exec cp {} dist/ \;
-          cd dist && zip -r ../sentinel-rs-macos.zip .
+          chmod +x build_app.sh
+          ./build_app.sh
+          # Vi lager en zip av selve .app-mappen for distribusjon
+          zip -r SentinelRS-macOS.zip SentinelRS.app
 
       - name: Create Release and Upload Asset
         env:
@@ -31,6 +33,6 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           gh release create "$TAG" \
-            --title "Release $TAG" \
+            --title "SentinelRS $TAG" \
             --generate-notes \
-            sentinel-rs-macos.zip
+            SentinelRS-macOS.zip
