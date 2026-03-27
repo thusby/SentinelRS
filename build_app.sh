@@ -4,15 +4,27 @@ set -e
 APP_NAME="SentinelRS"
 APP_DIR="target/release/$APP_NAME.app"
 BIN_DIR="$APP_DIR/Contents/MacOS"
+RESOURCES_DIR="$APP_DIR/Contents/Resources"
+ICON_FILE="AppIcon.icns"
+SOURCE_ICON_PATH="$ICON_FILE" # Assumes AppIcon.icns is in the project root
 
 echo "Building release binary..."
 cargo build --release
 
 echo "Creating App Bundle structure..."
 mkdir -p "$BIN_DIR"
+mkdir -p "$RESOURCES_DIR" # Create Resources directory
 
 echo "Copying binary..."
 cp target/release/sentinel-rs "$BIN_DIR/$APP_NAME"
+
+echo "Copying icon..."
+# Ensure the icon file exists in the project root before running
+if [ -f "$SOURCE_ICON_PATH" ]; then
+    cp "$SOURCE_ICON_PATH" "$RESOURCES_DIR/$ICON_FILE"
+else
+    echo "Warning: $SOURCE_ICON_PATH not found. App will use a default icon."
+fi
 
 echo "Creating Info.plist..."
 cat << PLIST > "$APP_DIR/Contents/Info.plist"
@@ -30,8 +42,10 @@ cat << PLIST > "$APP_DIR/Contents/Info.plist"
     <string>1.0.0</string>
     <key>CFBundleShortVersionString</key>
     <string>1.0</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string> <!-- Reference to AppIcon.icns -->
     <key>LSUIElement</key>
-    <true/>
+    <true/> <!-- Keep as background app -->
     <key>LSMinimumSystemVersion</key>
     <string>10.15</string>
 </dict>
