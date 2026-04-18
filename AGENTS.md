@@ -336,13 +336,23 @@ The About dialog is currently implemented by spawning:
 
 ## Maintenance Notes and Caveats
 
-### 1. Manual-action ProcessManager Is Refreshed Before Every Signal ✅
+### 1. Dock Icon Visible on macOS 26 (Tahoe Beta)
+
+On macOS 26 (Tahoe beta), the app's icon appears in the Dock while running, despite the following suppression attempts all being in place:
+
+- `LSUIElement = true` in `Info.plist`
+- `event_loop.set_activation_policy(ActivationPolicy::Accessory)` pre-run
+- `event_loop.set_dock_visibility(false)` pre-run
+
+Both `Accessory` and `Prohibited` activation policies were tested — neither suppresses the Dock icon on this OS version. This appears to be a macOS 26 behaviour change that is not yet handled by `tao 0.35.0`. The app is otherwise fully functional. Revisit when a stable macOS 26 release or a newer `tao` version is available.
+
+### 2. Manual-action ProcessManager Is Refreshed Before Every Signal ✅
 
 The UI thread owns a separate `ProcessManager` (`mut pm`) used exclusively for manual freeze/kill actions. Before dispatching any signal, the event handler now calls `pm.refresh()` to get a current process snapshot. This means a menu entry built from watchdog data will not try to signal a PID that has since exited or been replaced.
 
 If the refresh fails to find the PID, `freeze_process`/`kill_process` return `false` and no notification is sent — a safe no-op.
 
-### 2. Unused Capabilities Already Exist
+### 3. Unused Capabilities Already Exist
 
 `ProcessManager` already has support for:
 
@@ -351,13 +361,13 @@ If the refresh fails to find the PID, `freeze_process`/`kill_process` return `fa
 
 Those capabilities are not currently wired into the UI.
 
-### 3. Process Filtering Is Conservative but Name-Based
+### 4. Process Filtering Is Conservative but Name-Based
 
 Whitelisting is based on process name strings, not bundle ID, executable path, code signature, or parent/child relationships.
 
 If the whitelist ever needs to become more robust, this is a likely upgrade area.
 
-### 4. The App Is macOS-Specific in Practice
+### 5. The App Is macOS-Specific in Practice
 
 Although some UI crates are cross-platform, the current app behavior depends on macOS-specific pieces:
 

@@ -11,6 +11,7 @@ use muda::{Menu, MenuEvent, MenuId, MenuItem, PredefinedMenuItem, Submenu};
 use sysinfo::Pid;
 use tao::event::Event;
 use tao::event_loop::{ControlFlow, EventLoopBuilder, EventLoopProxy};
+use tao::platform::macos::{ActivationPolicy, EventLoopExtMacOS};
 use tray_icon::{Icon, TrayIconBuilder};
 
 use crate::memory::get_memory_level;
@@ -61,7 +62,15 @@ fn create_empty_icon() -> Icon {
 
 /// Main function that sets up the UI event loop, tray icon, and spawns the watchdog thread.
 fn main() {
-    let event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
+    let mut event_loop = EventLoopBuilder::<UserEvent>::with_user_event().build();
+    // Attempt to suppress the Dock icon. LSUIElement=true in Info.plist is not
+    // reliably honoured by tao, so we set the policy and dock visibility here
+    // before run() so tao reads them during launched().
+    // NOTE: On macOS 26 (Tahoe beta) the Dock icon still appears regardless of
+    // activation policy. This is a known Tahoe behaviour change with no
+    // workaround found in tao 0.35.0. The app is otherwise fully functional.
+    event_loop.set_activation_policy(ActivationPolicy::Accessory);
+    event_loop.set_dock_visibility(false);
     let proxy = event_loop.create_proxy();
 
     // --- Tray Menu Setup ---
@@ -108,7 +117,7 @@ fn main() {
     // Track PIDs from the last menu build to skip unnecessary rebuilds.
     let mut prev_consumer_pids: Vec<Pid> = Vec::new();
 
-    event_loop.run(move |event, _, control_flow| {
+    event_loop.run(move |event, event_loop, control_flow| {
         *control_flow = ControlFlow::Wait; // Keep the application running and waiting for events
 
         // Handle menu events (clicks on tray icon menu items)
