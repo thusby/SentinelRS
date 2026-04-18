@@ -15,18 +15,16 @@ use tao::platform::macos::{ActivationPolicy, EventLoopExtMacOS};
 use tray_icon::{Icon, TrayIconBuilder};
 
 use crate::memory::get_memory_level;
-use crate::process::{
-    DecisionOutcome, DecisionResult, MenuAction, ProcessFeatureVector, ProcessManager,
-};
+use crate::process::{DecisionOutcome, DecisionResult, ProcessFeatureVector, ProcessManager};
 
 /// Custom user events for the application's event loop.
 #[derive(Debug)]
 enum UserEvent {
-    UpdateStatus {
-        level: u32,
-        trend: String,
-    },
+    /// Updates the memory status displayed in the tray icon and info item.
+    UpdateStatus { level: u32, trend: String },
+    /// Updates the list of top memory-consuming processes in the "Kill/Freeze Top Offenders" submenu.
     UpdateTopConsumers(Vec<(Pid, String, u64)>),
+    /// Triggers a notification when the Panic Protocol automatically freezes a process.
     PanicTriggered {
         pid: Pid,
         name: String,
@@ -110,7 +108,6 @@ fn main() {
                     .spawn()
                     .ok();
             } else if menu_event.id == emergency_purge.id() {
-                // Notify user about "sudo purge" command
                 let _ = Notification::new()
                     .title("Emergency Purge")
                     .message("Run 'sudo purge' in the terminal to reclaim inactive memory.")
@@ -172,11 +169,13 @@ fn main() {
                 for (pid, name, mem) in consumers {
                     let mb = mem / 1_048_576; // Convert bytes to megabytes
 
+                    // Create "Freeze" menu item directly under kill_submenu
                     let freeze_text = format!("Freeze: {} ({} MB)", name, mb);
                     let freeze_item = MenuItem::new(freeze_text, true, None);
                     let _ = kill_submenu.append(&freeze_item);
                     current_dynamic_menu_items.push(freeze_item.clone());
 
+                    // Create "Kill" menu item directly under kill_submenu
                     let kill_text = format!("Kill: {} ({} MB)", name, mb);
                     let kill_item = MenuItem::new(kill_text, true, None);
                     let _ = kill_submenu.append(&kill_item);
@@ -206,7 +205,7 @@ fn watchdog_thread(proxy: EventLoopProxy<UserEvent>) {
     let mut history: VecDeque<u32> = VecDeque::with_capacity(20); // Sliding window for trend calculation
 
     loop {
-        // 1. Read System State
+        // 1. Read System State (Memory)
         let level = get_memory_level().unwrap_or(100);
         let used = 100_u32.saturating_sub(level);
 
@@ -253,7 +252,7 @@ fn watchdog_thread(proxy: EventLoopProxy<UserEvent>) {
             );
 
             // B. Get Decision from ML Engine (The core AI call)
-            let decision: DecisionResult = pm.get_decision_engine().run_inference(&features);
+            let decision: DecisionResult = pm.run_inference(&features);
 
             // C. Execution Logic & Fallbacks (THE DECISION ROUTER)
             let mut action_to_take: Option<&str> = None;
@@ -263,11 +262,13 @@ fn watchdog_thread(proxy: EventLoopProxy<UserEvent>) {
                 match decision.outcome {
                     DecisionOutcome::PredictFreeze => action_to_take = Some("FREEZE"),
                     DecisionOutcome::PredictKill => action_to_take = Some("KILL"),
-                    _ => {}
+                    _ => {} // Ignore if model predicts ignore, regardless of confidence
                 }
             } else if level < 10 && !top.is_empty() {
                 // 2. Fallback: Critical Panic Protocol (Always run this, regardless of low ML confidence)
                 action_to_take = Some("FREEZE"); // Always freeze the top offender when critically low memory
+            } else {
+                // 3. No action required based on current heuristics or model output.
             }
 
             if let Some(action) = action_to_take {
@@ -275,8 +276,9 @@ fn watchdog_thread(proxy: EventLoopProxy<UserEvent>) {
                 match action {
                     "FREEZE" => {
                         if pm.freeze_process(pid) {
+                            // Trigger a panic notification only if it was the top offender AND critically low memory (redundancy check for better logging)
                             let _ = proxy.send_event(UserEvent::PanicTriggered {
-                                pid,
+                                pid: pid,
                                 name: name.clone(),
                                 memory_mb: mem / 1_048_576,
                             });
@@ -289,7 +291,7 @@ fn watchdog_thread(proxy: EventLoopProxy<UserEvent>) {
                 }
             }
 
-            // Store the potential panic candidate for notification purposes
+            // Store the potential panic candidate for notification purposes (always use the top consumer if critical)
             panic_candidate = Some((pid, name, mem));
         }
 
