@@ -30,7 +30,7 @@ impl ProcessManager {
         }
 
         Self {
-            system: System::new_all(),
+            system: System::new(),
             whitelist,
         }
     }

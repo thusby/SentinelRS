@@ -5,7 +5,6 @@ edition = "2024"
 license = "MIT"
 
 [dependencies]
-crossbeam-channel = "0.5.15"
 libc = "0.2.183"
 mac-notification-sys = "0.6.12"
 muda = "0.17.1"
